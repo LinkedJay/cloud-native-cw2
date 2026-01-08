@@ -1,0 +1,66 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "contentVersion": "1.0.0.0",
+        "triggers": {
+            "When_an_HTTP_request_is_received": {
+                "type": "Request",
+                "kind": "Http",
+                "inputs": {
+                    "method": "GET"
+                }
+            }
+        },
+        "actions": {
+            "Query_documents_V5": {
+                "type": "ApiConnection",
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['documentdb-1']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/v5/cosmosdb/@{encodeURIComponent('AccountNameFromSettings')}/dbs/@{encodeURIComponent('driverside')}/colls/@{encodeURIComponent('assets')}/query",
+                    "queries": {
+                        "queryText": "SELECT * FROM c \nWHERE c.pk = \"assets\"\nORDER BY c.updatedAt DESC\n"
+                    }
+                },
+                "runAfter": {}
+            },
+            "Response": {
+                "type": "Response",
+                "kind": "Http",
+                "inputs": {
+                    "statusCode": 200,
+                    "body": "@body('Query_documents_V5')?['value']"
+                },
+                "runAfter": {
+                    "Query_documents_V5": [
+                        "Succeeded"
+                    ]
+                }
+            }
+        },
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "type": "Object",
+                "defaultValue": {}
+            }
+        }
+    },
+    "parameters": {
+        "$connections": {
+            "type": "Object",
+            "value": {
+                "documentdb-1": {
+                    "id": "/subscriptions/486a4100-2bcd-456a-9c1e-13cb32cae8b3/providers/Microsoft.Web/locations/germanywestcentral/managedApis/documentdb",
+                    "connectionId": "/subscriptions/486a4100-2bcd-456a-9c1e-13cb32cae8b3/resourceGroups/driverside-rg/providers/Microsoft.Web/connections/documentdb-1",
+                    "connectionName": "documentdb-1",
+                    "connectionProperties": {}
+                }
+            }
+        }
+    }
+}

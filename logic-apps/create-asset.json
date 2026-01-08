@@ -1,0 +1,93 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "contentVersion": "1.0.0.0",
+        "triggers": {
+            "When_an_HTTP_request_is_received": {
+                "type": "Request",
+                "kind": "Http",
+                "inputs": {
+                    "method": "POST",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "title": {
+                                "type": "string"
+                            },
+                            "description": {
+                                "type": "string"
+                            },
+                            "blobUrl": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "title",
+                            "description",
+                            "blobUrl"
+                        ]
+                    }
+                }
+            }
+        },
+        "actions": {
+            "Create_or_update_document_(V3)": {
+                "type": "ApiConnection",
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['documentdb']['connectionId']"
+                        }
+                    },
+                    "method": "post",
+                    "body": {
+                        "id": "@{guid()}",
+                        "pk": "assets",
+                        "title": "@{triggerBody()?['title']}",
+                        "description": "@{triggerBody()?['description']}",
+                        "blobUrl": "@{triggerBody()?['blobUrl']}",
+                        "createdAt": "@{utcNow()}"
+                    },
+                    "path": "/v2/cosmosdb/@{encodeURIComponent('AccountNameFromSettings')}/dbs/@{encodeURIComponent('driverside')}/colls/@{encodeURIComponent('assets')}/docs"
+                },
+                "runAfter": {}
+            },
+            "Response": {
+                "type": "Response",
+                "kind": "Http",
+                "inputs": {
+                    "statusCode": 200,
+                    "body": {
+                        "message": "created",
+                        "id": "@{outputs('Create_or_update_document_(V3)')?['body']?['id']}"
+                    }
+                },
+                "runAfter": {
+                    "Create_or_update_document_(V3)": [
+                        "Succeeded"
+                    ]
+                }
+            }
+        },
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "type": "Object",
+                "defaultValue": {}
+            }
+        }
+    },
+    "parameters": {
+        "$connections": {
+            "type": "Object",
+            "value": {
+                "documentdb": {
+                    "id": "/subscriptions/486a4100-2bcd-456a-9c1e-13cb32cae8b3/providers/Microsoft.Web/locations/germanywestcentral/managedApis/documentdb",
+                    "connectionId": "/subscriptions/486a4100-2bcd-456a-9c1e-13cb32cae8b3/resourceGroups/driverside-rg/providers/Microsoft.Web/connections/documentdb-1",
+                    "connectionName": "documentdb-1",
+                    "connectionProperties": {}
+                }
+            }
+        }
+    }
+}
